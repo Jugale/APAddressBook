@@ -132,7 +132,7 @@ void APAddressBookExternalChangeCallback(ABAddressBookRef addressBookRef, CFDict
         }
     }
     [contacts sortUsingDescriptors:descriptors];
-    NSarray *array = contacts.copy;
+    NSArray *array = contacts.copy;
     CFRelease(peopleArrayRef);
     
     return array;
