@@ -82,10 +82,6 @@ void APAddressBookExternalChangeCallback(ABAddressBookRef addressBookRef, CFDict
 - (void)loadContactsOnQueue:(dispatch_queue_t)queue
                  completion:(void (^)(NSArray *contacts, NSError *error))completionBlock
 {
-    APContactField fieldMask = self.fieldsMask;
-    NSArray *descriptors = self.sortDescriptors;
-    APContactFilterBlock filterBlock = self.filterBlock;
-
 	ABAddressBookRequestAccessWithCompletion(self.addressBook, ^(bool granted, CFErrorRef errorRef)
 	{
 	    dispatch_async(self.localQueue, ^
@@ -94,22 +90,7 @@ void APAddressBookExternalChangeCallback(ABAddressBookRef addressBookRef, CFDict
 	        NSError *error = nil;
             if (granted)
             {
-                CFArrayRef peopleArrayRef = ABAddressBookCopyArrayOfAllPeople(self.addressBook);
-                NSUInteger contactCount = (NSUInteger)CFArrayGetCount(peopleArrayRef);
-                NSMutableArray *contacts = [[NSMutableArray alloc] init];
-                for (NSUInteger i = 0; i < contactCount; i++)
-                {
-                    ABRecordRef recordRef = CFArrayGetValueAtIndex(peopleArrayRef, i);
-                    APContact *contact = [[APContact alloc] initWithRecordRef:recordRef
-                                                                    fieldMask:fieldMask];
-                    if (!filterBlock || filterBlock(contact))
-                    {
-                        [contacts addObject:contact];
-                    }
-                }
-                [contacts sortUsingDescriptors:descriptors];
-                array = contacts.copy;
-                CFRelease(peopleArrayRef);
+                array = [self allContacts];
             }
             else if (errorRef)
             {
@@ -125,6 +106,36 @@ void APAddressBookExternalChangeCallback(ABAddressBookRef addressBookRef, CFDict
             });
 		});
 	});
+}
+
+- (NSArray *)allContacts {
+    
+    if ([self.class access] != APAddressBookAccessGranted) {
+        return nil;
+    }
+    
+    APContactField fieldMask = self.fieldsMask;
+    NSArray *descriptors = self.sortDescriptors;
+    APContactFilterBlock filterBlock = self.filterBlock;
+    
+    CFArrayRef peopleArrayRef = ABAddressBookCopyArrayOfAllPeople(self.addressBook);
+    NSUInteger contactCount = (NSUInteger)CFArrayGetCount(peopleArrayRef);
+    NSMutableArray *contacts = [[NSMutableArray alloc] init];
+    for (NSUInteger i = 0; i < contactCount; i++)
+    {
+        ABRecordRef recordRef = CFArrayGetValueAtIndex(peopleArrayRef, i);
+        APContact *contact = [[APContact alloc] initWithRecordRef:recordRef
+                                                        fieldMask:fieldMask];
+        if (!filterBlock || filterBlock(contact))
+        {
+            [contacts addObject:contact];
+        }
+    }
+    [contacts sortUsingDescriptors:descriptors];
+    NSarray *array = contacts.copy;
+    CFRelease(peopleArrayRef);
+    
+    return array;
 }
 
 - (void)startObserveChangesWithCallback:(void (^)())callback
