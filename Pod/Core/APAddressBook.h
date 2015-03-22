@@ -26,4 +26,6 @@
 - (void)startObserveChangesWithCallback:(void (^)())callback;
 - (void)stopObserveChanges;
 
+- (NSArray *)allContacts;
+
 @end
